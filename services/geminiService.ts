@@ -1,86 +1,87 @@
-import { GoogleGenAI, Modality, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
+import type { BackgroundStyle } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-const model = 'gemini-2.5-flash-image-preview';
 
-function fileToGenerativePart(base64: string, mimeType: string) {
-  return {
-    inlineData: {
-      data: base64,
-      mimeType,
-    },
-  };
+interface ImageInput {
+  base64: string;
+  mimeType: string;
 }
 
-async function generateSingleImage(parts: any[], config?: any): Promise<string> {
-  const response: GenerateContentResponse = await ai.models.generateContent({
-    model: model,
+/**
+ * Generates a branded product image by removing the background, adding a logo, and placing it on a clean background.
+ */
+export const generateBrandedImage = async (productImage: ImageInput, logoImage: ImageInput, maskImage?: ImageInput): Promise<string> => {
+  const parts: any[] = [
+    {
+      inlineData: {
+        data: productImage.base64,
+        mimeType: productImage.mimeType,
+      },
+    },
+    {
+      inlineData: {
+        data: logoImage.base64,
+        mimeType: logoImage.mimeType,
+      },
+    },
+  ];
+
+  let prompt = `
+    Actúa como un fotógrafo de productos y editor de fotos de e-commerce de élite. Tu única misión es preparar una imagen de producto para la venta online.
+    
+    Se te proporcionan dos imágenes:
+    1. La imagen principal del producto.
+    2. La imagen del logotipo.
+
+    Tus tareas son las siguientes, en este orden exacto:
+    1.  **PRESERVAR EL PRODUCTO ORIGINAL:** La imagen del producto principal debe permanecer 100% idéntica. NO la redibujes, NO la alteres, NO cambies sus colores, texturas o iluminación. Debe ser la foto original.
+    2.  **ELIMINAR EL FONDO:** Elimina el fondo de la imagen del producto con precisión quirúrgica. El resultado debe ser solo el producto con un fondo transparente.
+    3.  **CREAR UN FONDO NUEVO:** Crea un fondo de color blanco puro (#FFFFFF).
+    4.  **COMPOSICIÓN:** Coloca el producto (con su fondo ya eliminado) sobre el fondo blanco.
+    5.  **AÑADIR LOGO:** Coloca el logotipo de la segunda imagen en la esquina inferior derecha de la imagen final. El logo debe ser discreto pero legible.
+  `;
+
+  if (maskImage) {
+    parts.push({
+      inlineData: {
+        data: maskImage.base64,
+        mimeType: maskImage.mimeType,
+      },
+    });
+    prompt += `
+      **¡INSTRUCCIÓN PRIORITARIA DE REFINAMIENTO!**
+      Se proporciona una tercera imagen que es una máscara de eliminación. Las áreas pintadas en esta máscara indican elementos que DEBEN ser eliminados junto con el fondo. Esta orden anula cualquier otra interpretación. Asegúrate de que todo lo que está debajo de la máscara desaparezca por completo.
+    `;
+  }
+  
+  parts.push({ text: prompt });
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-image-preview',
     contents: { parts },
     config: {
       responseModalities: [Modality.IMAGE, Modality.TEXT],
-      ...config,
     },
   });
 
-  for (const part of response.candidates[0].content.parts) {
-    if (part.inlineData) {
-      return part.inlineData.data;
+  // Robust response validation
+  if (
+    response.candidates &&
+    response.candidates.length > 0 &&
+    response.candidates[0].finishReason !== 'SAFETY' && // Check for safety blocks
+    response.candidates[0].content &&
+    response.candidates[0].content.parts &&
+    Array.isArray(response.candidates[0].content.parts)
+  ) {
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData && part.inlineData.data) {
+        return part.inlineData.data;
+      }
     }
+  } else if (response.candidates && response.candidates[0].finishReason === 'SAFETY') {
+     throw new Error('La generación de la imagen fue bloqueada por razones de seguridad. Intenta con una imagen diferente.');
   }
-  throw new Error("La IA no generó una imagen. Por favor, inténtalo de nuevo.");
-}
 
-export type BackgroundStyle = 'watermark' | 'pattern_small' | 'pattern_large';
-
-export const generateBackground = async (
-  logoImage: { base64: string; mimeType: string },
-  style: BackgroundStyle
-): Promise<string> => {
-  const logoPart = fileToGenerativePart(logoImage.base64, logoImage.mimeType);
-  let prompt = '';
-
-  switch (style) {
-    case 'watermark':
-      prompt = 'Usando el logo proporcionado, crea un fondo de marketing limpio y profesional. El logo debe estar grande, centrado y con una opacidad reducida (aproximadamente 30-40%) para que actúe como una marca de agua sobre un fondo blanco o de color muy claro. La salida debe ser solo la imagen de fondo.';
-      break;
-    case 'pattern_small':
-      prompt = 'Usando el logo proporcionado, crea un fondo de patrón simétrico y repetitivo. El logo debe ser pequeño y estar distribuido de manera uniforme por todo el lienzo sobre un fondo blanco o de color claro. El resultado debe ser elegante y profesional, adecuado para una presentación de producto. La salida debe ser solo la imagen de fondo.';
-      break;
-    case 'pattern_large':
-      prompt = 'Usando el logo proporcionado, crea un fondo de patrón. El logo debe ser de un tamaño mediano-grande y repetirse menos veces que en un patrón denso, manteniendo un espacio generoso entre cada repetición. El fondo debe ser blanco o de un color muy claro. El diseño debe ser audaz pero profesional. La salida debe ser solo la imagen de fondo.';
-      break;
-  }
-  
-  return generateSingleImage([logoPart, { text: prompt }]);
-};
-
-
-export const combineProductWithBackground = async (
-  productImage: { base64: string; mimeType: string },
-  backgroundImage: { base64: string; mimeType: string }
-): Promise<string> => {
-  const productPart = fileToGenerativePart(productImage.base64, productImage.mimeType);
-  const backgroundPart = fileToGenerativePart(backgroundImage.base64, backgroundImage.mimeType);
-  
-  const prompt = `Actúa como un experto en edición de fotos de e-commerce. Tarea:
-1.  La primera imagen es un producto con un fondo aleatorio.
-2.  La segunda imagen es un fondo de marca diseñado profesionalmente.
-3.  Tu única misión es recortar el producto de la primera imagen con una precisión quirúrgica, eliminando su fondo original por completo.
-4.  No alteres, modifiques ni redibujes el producto de ninguna manera. Debe conservar sus píxeles, texturas y colores originales.
-5.  Superpón el producto recortado y limpio sobre la segunda imagen (el fondo de marca).
-6.  La salida final debe ser únicamente la imagen compuesta.`;
-  
-  return generateSingleImage([productPart, backgroundPart, { text: prompt }]);
-};
-
-export const refineImage = async (
-  originalImage: { base64: string; mimeType: string },
-  maskImage: { base64: string; mimeType: string }
-): Promise<string> => {
-  const originalPart = fileToGenerativePart(originalImage.base64, originalImage.mimeType);
-  const maskPart = fileToGenerativePart(maskImage.base64, maskImage.mimeType);
-  
-  const prompt = "Eres un editor de imágenes experto. Usa la segunda imagen como una máscara. Rellena el área enmascarada de la primera imagen para que se mezcle perfectamente con el contexto circundante, eliminando eficazmente cualquier objeto o artefacto dentro de la máscara. La salida debe ser solo la imagen final editada.";
-  
-  return generateSingleImage([originalPart, maskPart, { text: prompt }]);
+  throw new Error('La IA no pudo generar una imagen. Por favor, inténtalo de nuevo.');
 };

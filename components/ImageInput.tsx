@@ -8,7 +8,7 @@ interface ImageInputProps {
   image: ImageFile | null;
   onImageChange: (file: File) => void;
   icon: 'product' | 'logo';
-  step: number;
+  step: number | string;
 }
 
 const ImageInput: React.FC<ImageInputProps> = ({ id, label, image, onImageChange, icon, step }) => {
@@ -20,7 +20,7 @@ const ImageInput: React.FC<ImageInputProps> = ({ id, label, image, onImageChange
 
   return (
     <div className="bg-gray-800/50 border-2 border-dashed border-gray-600 rounded-2xl p-6 flex flex-col items-center justify-center transition-all duration-300 hover:border-amber-400 hover:bg-gray-800 w-full aspect-square relative">
-        <div className="absolute top-4 left-4 bg-amber-500 text-gray-900 rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg z-10">{step}</div>
+      <div className="absolute top-4 left-4 bg-amber-500 text-gray-900 rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg z-10">{step}</div>
       <label htmlFor={id} className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-center relative">
         {image ? (
           <>
@@ -34,8 +34,7 @@ const ImageInput: React.FC<ImageInputProps> = ({ id, label, image, onImageChange
           </>
         ) : (
           <div className="flex flex-col items-center justify-center gap-4 text-gray-400">
-            {icon === 'product' && <Icon type="product" className="w-16 h-16"/>}
-            {icon === 'logo' && <Icon type="logo" className="w-16 h-16"/>}
+            <Icon type={icon} className="w-16 h-16"/>
             <span className="font-semibold text-lg">{label}</span>
             <span className="text-sm text-gray-500">Haz clic para seleccionar</span>
           </div>

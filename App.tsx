@@ -1,29 +1,41 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import ImageInput from './components/ImageInput';
-import BackgroundSelector from './components/BackgroundSelector';
 import Spinner from './components/Spinner';
 import EditModal from './components/EditModal';
+import TrainingLibrary from './components/TrainingLibrary';
 import { Icon } from './components/Icon';
-import type { ImageFile } from './types';
-import { generateBackground, combineProductWithBackground, refineImage, BackgroundStyle } from './services/geminiService';
+import type { ImageFile, TrainingExample, BackgroundStyle } from './types';
+import { generateBrandedImage } from './services/geminiService';
 
 enum AppState {
   UPLOADING,
-  GENERATING_BACKGROUNDS,
-  SELECTING_BACKGROUND,
-  COMBINING_IMAGES,
+  GENERATING,
   DISPLAYING_RESULT,
-  REFINING_IMAGE,
+  REFINING,
 }
 
 function App() {
   const [productImage, setProductImage] = useState<ImageFile | null>(null);
   const [logoImage, setLogoImage] = useState<ImageFile | null>(null);
-  const [backgrounds, setBackgrounds] = useState<string[]>([]);
   const [finalImage, setFinalImage] = useState<string | null>(null);
+  const [originalImageForRefine, setOriginalImageForRefine] = useState<string | null>(null);
   const [appState, setAppState] = useState<AppState>(AppState.UPLOADING);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [trainingExamples, setTrainingExamples] = useState<TrainingExample[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedExamples = localStorage.getItem('trainingExamples');
+      if (storedExamples) {
+        setTrainingExamples(JSON.parse(storedExamples));
+      }
+    } catch (e) {
+      console.error("Failed to load training examples from localStorage", e);
+      localStorage.removeItem('trainingExamples');
+    }
+  }, []);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -33,88 +45,78 @@ function App() {
       reader.onerror = (error) => reject(error);
     });
 
-  const handleProductImageChange = async (file: File) => {
+  const handleImageChange = async (file: File, type: 'product' | 'logo') => {
     try {
       const base64 = await fileToBase64(file);
-      setProductImage({ file, base64 });
+      const imageFile = { file, base64 };
+      if (type === 'product') {
+        setProductImage(imageFile);
+      } else {
+        setLogoImage(imageFile);
+      }
     } catch (err) {
-      setError('Error processing product image.');
+      setError(`Error al procesar la imagen de ${type}.`);
     }
   };
+  
+  const handleGenerateClick = useCallback(async (maskBase64?: string) => {
+    // For a new generation, we need both images.
+    if (!maskBase64 && (!productImage || !logoImage)) return;
 
-  const handleLogoImageChange = async (file: File) => {
-    try {
-      const base64 = await fileToBase64(file);
-      setLogoImage({ file, base64 });
-    } catch (err) {
-      setError('Error processing logo image.');
+    // For refining, we need the original product image.
+    if (maskBase64 && !originalImageForRefine) {
+        setError("No se encontró la imagen original para refinar.");
+        return;
     }
-  };
 
-  const handleGenerateBackgrounds = useCallback(async () => {
-    if (!logoImage) return;
-    setAppState(AppState.GENERATING_BACKGROUNDS);
+    setAppState(maskBase64 ? AppState.REFINING : AppState.GENERATING);
     setError(null);
-    try {
-      const styles: BackgroundStyle[] = ['watermark', 'pattern_small', 'pattern_large'];
-      const promises = styles.map(style => generateBackground(
-        { base64: logoImage.base64.split(',')[1], mimeType: logoImage.file.type },
-        style
-      ));
-      const results = await Promise.all(promises);
-      setBackgrounds(results.map(base64 => `data:image/png;base64,${base64}`));
-      setAppState(AppState.SELECTING_BACKGROUND);
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate backgrounds.');
-      setAppState(AppState.UPLOADING);
-    }
-  }, [logoImage]);
-
-  const handleBackgroundSelect = useCallback(async (selectedBgBase64: string) => {
-    if (!productImage) return;
-    setAppState(AppState.COMBINING_IMAGES);
-    setError(null);
-    try {
-      // The service expects the raw base64 string, not the data URI
-      const productB64 = productImage.base64.split(',')[1];
-      const backgroundB64 = selectedBgBase64.split(',')[1];
-
-      const result = await combineProductWithBackground(
-        { base64: productB64, mimeType: productImage.file.type },
-        { base64: backgroundB64, mimeType: 'image/png' } // Assuming generated bg is png
-      );
-      setFinalImage(`data:image/png;base64,${result}`);
-      setAppState(AppState.DISPLAYING_RESULT);
-    } catch (err: any) {
-      setError(err.message || 'Failed to combine images.');
-      setAppState(AppState.SELECTING_BACKGROUND);
-    }
-  }, [productImage]);
-
-  const handleRefineImage = async (maskBase64: string) => {
-    if (!finalImage) return;
     setIsEditModalOpen(false);
-    setAppState(AppState.REFINING_IMAGE);
-    setError(null);
+
     try {
-        const originalImageB64 = finalImage.split(',')[1];
-        const result = await refineImage(
-            { base64: originalImageB64, mimeType: 'image/png' },
-            { base64: maskBase64, mimeType: 'image/png' }
+        const imageToProcess = maskBase64 ? originalImageForRefine! : productImage!.base64;
+        
+        const result = await generateBrandedImage(
+            { base64: imageToProcess.split(',')[1], mimeType: 'image/png' },
+            { base64: logoImage!.base64.split(',')[1], mimeType: logoImage!.file.type },
+            maskBase64 ? { base64: maskBase64, mimeType: 'image/png' } : undefined
         );
         setFinalImage(`data:image/png;base64,${result}`);
+        if (!maskBase64) {
+            setOriginalImageForRefine(productImage!.base64); // Save original for potential refining
+        }
     } catch (err: any) {
-        setError(err.message || 'Failed to refine image.');
+        setError(err.message || 'No se pudo generar la imagen.');
     } finally {
         setAppState(AppState.DISPLAYING_RESULT);
     }
+  }, [productImage, logoImage, originalImageForRefine]);
+
+
+  const handleSaveExample = () => {
+    if (!originalImageForRefine || !logoImage || !finalImage) {
+        setError("Faltan datos para guardar el ejemplo.");
+        return;
+    }
+    const newExample: TrainingExample = {
+        id: new Date().toISOString(),
+        originalProductImage: originalImageForRefine,
+        logoImage: logoImage.base64,
+        // Using a placeholder as this flow doesn't have multiple styles
+        backgroundStyle: 'watermark', 
+        finalImage: finalImage,
+    };
+    const newExamples = [...trainingExamples, newExample];
+    setTrainingExamples(newExamples);
+    localStorage.setItem('trainingExamples', JSON.stringify(newExamples));
+    alert("Ejemplo guardado en la Biblioteca de Entrenamiento!");
   };
 
   const handleReset = () => {
     setProductImage(null);
     setLogoImage(null);
-    setBackgrounds([]);
     setFinalImage(null);
+    setOriginalImageForRefine(null);
     setAppState(AppState.UPLOADING);
     setError(null);
     setIsEditModalOpen(false);
@@ -122,11 +124,9 @@ function App() {
 
   const getLoadingMessage = () => {
     switch(appState) {
-      case AppState.GENERATING_BACKGROUNDS:
-        return "Creando fondos de marca con IA... Esto puede tardar un momento.";
-      case AppState.COMBINING_IMAGES:
-        return "Combinando tu producto con el fondo... ¡Casi listo!";
-      case AppState.REFINING_IMAGE:
+      case AppState.GENERATING:
+        return "Procesando tu imagen con IA... Esto puede tardar un momento.";
+      case AppState.REFINING:
         return "Aplicando retoques mágicos a tu imagen...";
       default:
         return "Cargando...";
@@ -134,30 +134,23 @@ function App() {
   }
 
   const renderContent = () => {
-    if (appState === AppState.GENERATING_BACKGROUNDS || appState === AppState.COMBINING_IMAGES || appState === AppState.REFINING_IMAGE) {
+    if (appState === AppState.GENERATING || appState === AppState.REFINING) {
       return <Spinner message={getLoadingMessage()} />;
     }
     
-    if (appState === AppState.SELECTING_BACKGROUND) {
-      return <BackgroundSelector backgrounds={backgrounds} onSelect={handleBackgroundSelect} />;
-    }
-
     if (appState === AppState.DISPLAYING_RESULT && finalImage) {
       return (
-        <div className="text-center flex flex-col items-center gap-8">
+        <div className="text-center flex flex-col items-center gap-8 w-full">
             <div className="text-center">
-                <h2 className="text-3xl font-bold flex items-center justify-center gap-3">
-                    <div className="bg-amber-500 text-gray-900 rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg shrink-0">3</div>
-                    ¡Tu Imagen Está Lista!
-                </h2>
-                <p className="text-gray-400 mt-2">Descarga tu imagen o haz algunos retoques finales.</p>
+                <h2 className="text-3xl font-bold">¡Tu Imagen Está Lista!</h2>
+                <p className="text-gray-400 mt-2">Descarga, refina o guarda este resultado.</p>
             </div>
 
             <div className="relative group w-full max-w-2xl rounded-2xl overflow-hidden border-2 border-gray-700">
                 <img src={finalImage} alt="Final product" className="w-full h-auto object-contain" />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
                 <button
                     onClick={() => setIsEditModalOpen(true)}
                     className="flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-500 transition-all duration-300 transform hover:scale-105"
@@ -173,8 +166,15 @@ function App() {
                     Descargar
                 </a>
                 <button
+                    onClick={handleSaveExample}
+                    className="flex items-center justify-center gap-2 bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all duration-300 transform hover:scale-105"
+                >
+                    <Icon type="save" className="w-5 h-5" />
+                    <span>Guardar Ejemplo</span>
+                </button>
+                <button
                     onClick={handleReset}
-                    className="flex items-center justify-center gap-2 bg-gray-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-500 transition-all duration-300 transform hover:scale-105"
+                    className="flex items-center justify-center gap-2 bg-gray-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-500 transition-all duration-300"
                 >
                     Empezar de Nuevo
                 </button>
@@ -184,49 +184,57 @@ function App() {
     }
     
     return (
-      <>
+      <div className="w-full flex flex-col items-center">
         <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold flex items-center justify-center gap-3"><div className="bg-amber-500 text-gray-900 rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg shrink-0">1</div>Sube Tus Imágenes</h2>
-            <p className="text-gray-400 mt-2">Proporciona una imagen de tu producto y el logo de tu marca.</p>
+            <h2 className="text-3xl font-bold">Sube Tus Imágenes</h2>
+            <p className="text-gray-400 mt-2">La IA quitará el fondo de tu producto y añadirá tu logo.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
-          <ImageInput
+           <ImageInput
             id="product-image"
-            label="Imagen del Producto"
+            label="1. Sube tu Producto"
             image={productImage}
-            onImageChange={handleProductImageChange}
+            onImageChange={(file) => handleImageChange(file, 'product')}
             icon="product"
-            step={1}
+            step="1"
           />
           <ImageInput
             id="logo-image"
-            label="Logo de la Marca"
+            label="2. Sube tu Logo"
             image={logoImage}
-            onImageChange={handleLogoImageChange}
+            onImageChange={(file) => handleImageChange(file, 'logo')}
             icon="logo"
-            step={2}
+            step="2"
           />
         </div>
-        {productImage && logoImage && (
+        {productImage && logoImage && appState === AppState.UPLOADING && (
           <button
-            onClick={handleGenerateBackgrounds}
+            onClick={() => handleGenerateClick()}
             className="mt-12 bg-amber-500 text-gray-900 font-bold py-4 px-8 rounded-lg text-xl hover:bg-amber-400 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-amber-500/20"
           >
-            Generar Fondos
+            Generar Imagen
           </button>
         )}
-      </>
+      </div>
     );
   };
 
   return (
     <div className="bg-gray-900 text-white min-h-screen font-sans">
       <main className="container mx-auto px-4 py-12 flex flex-col items-center justify-center min-h-screen">
-        <header className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold tracking-tight text-amber-400">Generador de Imágenes de Producto con IA</h1>
+        <header className="text-center mb-12 relative w-full">
+          <h1 className="text-5xl font-extrabold tracking-tight text-amber-400">Branding de Productos con IA</h1>
           <p className="text-xl text-gray-300 mt-4 max-w-3xl mx-auto">
-            Crea imágenes de marketing profesionales para tus productos en segundos. Solo sube tu producto, tu logo, y deja que la magia suceda.
+            Resultados profesionales en segundos. Sube, genera y perfecciona.
           </p>
+          <button 
+            onClick={() => setIsLibraryOpen(true)}
+            className="absolute top-0 right-0 bg-gray-700/50 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
+            title="Abrir Biblioteca de Entrenamiento"
+          >
+             <Icon type="library" className="w-5 h-5"/>
+             <span>Biblioteca</span>
+          </button>
         </header>
 
         {error && (
@@ -242,14 +250,20 @@ function App() {
         {renderContent()}
       </main>
       
-      {finalImage && (
+      {originalImageForRefine && (
         <EditModal 
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
-            productImage={finalImage}
-            onRefine={handleRefineImage}
+            productImage={originalImageForRefine}
+            onRefine={(mask) => handleGenerateClick(mask)}
         />
       )}
+      <TrainingLibrary 
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        examples={trainingExamples}
+        setExamples={setTrainingExamples}
+      />
     </div>
   );
 }
