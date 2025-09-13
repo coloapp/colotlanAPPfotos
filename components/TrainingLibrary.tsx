@@ -10,16 +10,14 @@ interface TrainingLibraryProps {
   setExamples: React.Dispatch<React.SetStateAction<TrainingExample[]>>;
 }
 
-// Fix: Implemented the TrainingLibrary component to display, manage, and delete saved examples.
 const TrainingLibrary: React.FC<TrainingLibraryProps> = ({ isOpen, onClose, examples, setExamples }) => {
     if (!isOpen) return null;
 
     const handleDelete = (id: string) => {
-        if (window.confirm("¿Estás seguro de que quieres eliminar este ejemplo?")) {
-            const updatedExamples = examples.filter(ex => ex.id !== id);
-            setExamples(updatedExamples);
-            localStorage.setItem('trainingExamples', JSON.stringify(updatedExamples));
-        }
+        // Removed the unreliable window.confirm() call
+        const updatedExamples = examples.filter(ex => ex.id !== id);
+        setExamples(updatedExamples);
+        localStorage.setItem('trainingExamples', JSON.stringify(updatedExamples));
     };
 
     const styleLabels: Record<BackgroundStyle, string> = {
