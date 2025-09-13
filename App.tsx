@@ -234,6 +234,11 @@ function App() {
           >
              <Icon type="library" className="w-5 h-5"/>
              <span>Biblioteca</span>
+             {trainingExamples.length > 0 && (
+                <span className="bg-amber-500 text-gray-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {trainingExamples.length}
+                </span>
+             )}
           </button>
         </header>
 
