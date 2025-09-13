@@ -1,17 +1,13 @@
-
+// Fix: Defining types for the application.
 export interface ImageFile {
   file: File;
-  base64: string;
+  base64: string; // The base64 string with data URI
 }
 
-// Fix: Added BackgroundStyle type to be shared across the application.
-export type BackgroundStyle = 'watermark' | 'pattern_small' | 'pattern_large';
-
-// Fix: Added TrainingExample interface to be shared across the application.
-export interface TrainingExample {
+export interface FinalImage {
   id: string;
-  originalProductImage: string;
-  logoImage: string;
-  backgroundStyle: BackgroundStyle;
-  finalImage: string;
+  src: string; // base64 data URI
+  createdAt: Date;
 }
+
+export type AppStage = 'PRODUCT' | 'LOGO' | 'DESIGN' | 'FINALIZE';

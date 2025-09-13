@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from './Icon';
-import type { ImageFile } from '../types';
+// Fix: Corrected import path for types.
+import type { ImageFile } from './../types';
 
 interface ImageInputProps {
   id: string;
@@ -13,15 +14,15 @@ interface ImageInputProps {
 
 const ImageInput: React.FC<ImageInputProps> = ({ id, label, image, onImageChange, icon, step }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (onImageChange && e.target.files && e.target.files[0]) {
       onImageChange(e.target.files[0]);
     }
   };
 
   return (
-    <div className="bg-gray-800/50 border-2 border-dashed border-gray-600 rounded-2xl p-6 flex flex-col items-center justify-center transition-all duration-300 hover:border-amber-400 hover:bg-gray-800 w-full aspect-square relative">
+    <div className={`bg-gray-800/50 border-2 border-dashed border-gray-600 rounded-2xl p-6 flex flex-col items-center justify-center transition-all duration-300 w-full aspect-square relative hover:border-amber-400 hover:bg-gray-800`}>
       <div className="absolute top-4 left-4 bg-amber-500 text-gray-900 rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg z-10">{step}</div>
-      <label htmlFor={id} className="cursor-pointer w-full h-full flex flex-col items-center justify-center text-center relative">
+      <label htmlFor={id} className={`cursor-pointer w-full h-full flex flex-col items-center justify-center text-center relative`}>
         {image ? (
           <>
             <img src={image.base64} alt={label} className="w-full h-full object-contain rounded-lg" />
@@ -36,7 +37,7 @@ const ImageInput: React.FC<ImageInputProps> = ({ id, label, image, onImageChange
           <div className="flex flex-col items-center justify-center gap-4 text-gray-400">
             <Icon type={icon} className="w-16 h-16"/>
             <span className="font-semibold text-lg">{label}</span>
-            <span className="text-sm text-gray-500">Haz clic para seleccionar</span>
+            <span className="text-sm text-gray-500">Haz clic o arrastra para seleccionar</span>
           </div>
         )}
       </label>
