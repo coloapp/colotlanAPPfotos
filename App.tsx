@@ -1,223 +1,298 @@
 import React, { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import type { AppStage, ImageFile, FinalImage } from './types';
+import * as geminiService from './services/geminiService';
+
 import ImageInput from './components/ImageInput';
-import EditModal from './components/EditModal';
 import Spinner from './components/Spinner';
 import DesignGrid from './components/DesignGrid';
 import FinalizationView from './components/FinalizationView';
 import ImageLibraryModal from './components/ImageLibraryModal';
-import { refineImage, generateStudioScenes } from './services/geminiService';
-import type { ImageFile, FinalImage, AppStage } from './types';
 import { Icon } from './components/Icon';
+import RefinementView from './components/RefinementView';
 
-const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-});
 
 const App: React.FC = () => {
-  const [stage, setStage] = useState<AppStage>('PRODUCT');
+  const [appStage, setAppStage] = useState<AppStage>('UPLOAD_PRODUCT');
   
+  // Original uploaded images
   const [productImage, setProductImage] = useState<ImageFile | null>(null);
-  const [refinedProduct, setRefinedProduct] = useState<string | null>(null);
   const [logoImage, setLogoImage] = useState<ImageFile | null>(null);
+
+  // AI-processed, transparent PNGs
+  const [refinedProduct, setRefinedProduct] = useState<string | null>(null);
   const [refinedLogo, setRefinedLogo] = useState<string | null>(null);
 
-  const [designProposals, setDesignProposals] = useState<string[]>([]);
-  const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
-  
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [designs, setDesigns] = useState<string[]>([]);
+  const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
+  const [batchImages, setBatchImages] = useState<string[]>([]);
+  const [isBatchLoading, setIsBatchLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [imageLibrary, setImageLibrary] = useState<FinalImage[]>([]);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingImage, setEditingImage] = useState<{ type: 'product' | 'logo', base64: string } | null>(null);
-  
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [savedImages, setSavedImages] = useState<FinalImage[]>([]);
+  const toBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+    });
 
-  const handleReset = () => {
-      setStage('PRODUCT');
-      setProductImage(null);
-      setRefinedProduct(null);
-      setLogoImage(null);
-      setRefinedLogo(null);
-      setDesignProposals([]);
-      setSelectedDesign(null);
-      setError(null);
-  }
-
-  const handleImageUpload = async (file: File, type: 'product' | 'logo') => {
-    const base64 = await toBase64(file);
-    if (type === 'product') {
-      setProductImage({ file, base64 });
-      setRefinedProduct(base64); // Initially set refined to original
-    } else {
-      setLogoImage({ file, base64 });
-      setRefinedLogo(base64);
-    }
-  };
-
-  const handleOpenEditModal = (type: 'product' | 'logo') => {
-    const imageToEdit = type === 'product' ? refinedProduct : refinedLogo;
-    if (imageToEdit) {
-      setEditingImage({ type, base64: imageToEdit });
-      setIsEditModalOpen(true);
-    }
-  };
-
-  const handleRefine = async (maskBase64: string) => {
-    if (!editingImage) return;
-    
-    setIsEditModalOpen(false);
-    setIsLoading(true);
-    setLoadingMessage(`Refinando ${editingImage.type === 'product' ? 'producto' : 'logotipo'}...`);
-    setError(null);
-    
+  const handleProductUpload = async (file: File) => {
     try {
-      const result = await refineImage(editingImage.base64, maskBase64);
-      if (editingImage.type === 'product') {
-        setRefinedProduct(result);
-      } else {
-        setRefinedLogo(result);
-      }
-    } catch (err) {
-      setError('Falló el refinamiento de la imagen. Por favor, inténtalo de nuevo.');
+      setIsLoading(true);
+      setLoadingMessage('Eliminando el fondo del producto...');
+      setError(null);
+      const base64 = await toBase64(file);
+      setProductImage({ file, base64 });
+      const processedImage = await geminiService.removeBackground(base64);
+      setRefinedProduct(processedImage);
+      setAppStage('REFINE_PRODUCT');
+    } catch (err: any) {
+      console.error("Error processing product image:", err);
+      setError(err.message || 'No se pudo procesar la imagen del producto.');
+      setAppStage('UPLOAD_PRODUCT'); // Revert stage on error
     } finally {
       setIsLoading(false);
-      setEditingImage(null);
     }
   };
 
-  const handleProductNext = () => {
-    if (refinedProduct) setStage('LOGO');
+  const handleLogoUpload = async (file: File) => {
+    try {
+      setIsLoading(true);
+      setLoadingMessage('Eliminando el fondo del logo...');
+      setError(null);
+      const base64 = await toBase64(file);
+      setLogoImage({ file, base64 });
+      const processedImage = await geminiService.removeBackground(base64);
+      setRefinedLogo(processedImage);
+      setAppStage('REFINE_LOGO');
+    } catch (err: any) {
+      console.error("Error processing logo image:", err);
+      setError(err.message || 'No se pudo procesar la imagen del logo.');
+      setAppStage('UPLOAD_LOGO'); // Revert stage on error
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleLogoNext = async () => {
-    if (!refinedProduct || !refinedLogo) return;
 
-    setStage('DESIGN');
+  const handleGenerateDesigns = async () => {
+    if (!refinedProduct || !refinedLogo) {
+      setError("Faltan el producto y el logo refinados.");
+      return;
+    }
     setIsLoading(true);
-    setLoadingMessage('Generando diseños de estudio profesionales...');
+    setLoadingMessage('Tu director de arte IA está trabajando... Esto puede tardar hasta un minuto.');
     setError(null);
-
     try {
-        const results = await generateStudioScenes(refinedProduct, refinedLogo);
-        setDesignProposals(results);
-    } catch (err) {
-        setError('No se pudieron generar los diseños. Por favor, inténtalo de nuevo.');
+      const generatedDesigns = await geminiService.generateInitialDesigns(refinedProduct, refinedLogo);
+      setDesigns(generatedDesigns);
+      setAppStage('SELECT_DESIGN');
+    } catch (err: any) {
+      console.error("Error generating designs:", err);
+      setError(err.message || "Ocurrió un error al generar los diseños. Por favor, inténtalo de nuevo.");
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
   
-  const handleDesignSelect = (design: string) => {
+  const handleSelectDesign = (design: string) => {
     setSelectedDesign(design);
-    setStage('FINALIZE');
-  }
+    setAppStage('FINALIZE');
+  };
 
-  const handleSaveToLibrary = (finalImageSrc: string) => {
+  const handleRefineWithMask = async (imageToRefine: string, mask: string, type: 'product' | 'logo') => {
+      setIsLoading(true);
+      setLoadingMessage('Aplicando retoques mágicos...');
+      setError(null);
+      try {
+          const refinedImage = await geminiService.refineBackground(imageToRefine, mask);
+          if (type === 'product') {
+            setRefinedProduct(refinedImage);
+          } else {
+            setRefinedLogo(refinedImage);
+          }
+      } catch (err: any) {
+          console.error("Error refining image:", err);
+          setError(err.message || "No se pudo refinar la imagen.");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+  
+  const handleGenerateBatch = async (mainImage: string) => {
+    setIsBatchLoading(true);
+    setError(null);
+    try {
+        const batch = await geminiService.generateBatchImages(mainImage);
+        setBatchImages(batch);
+    } catch (err: any) {
+        console.error("Error generating batch images:", err);
+        setError(err.message || "No se pudieron generar las imágenes de lote.");
+    } finally {
+        setIsBatchLoading(false);
+    }
+  };
+
+  const handleCreateVideoAd = async (config: { headline: string; socials: any }) => {
+    if (!selectedDesign || !refinedLogo) return;
+    setIsVideoLoading(true);
+    setLoadingMessage("Creando tu comercial... Esto puede tomar varios minutos.");
+    setError(null);
+    try {
+        const url = await geminiService.createVideoAd(selectedDesign, batchImages, refinedLogo, config.headline, config.socials);
+        setVideoUrl(url);
+    } catch(err: any) {
+        console.error("Error creating video ad:", err);
+        setError(err.message || "No se pudo crear el video.");
+    } finally {
+        setIsVideoLoading(false);
+    }
+  };
+
+  const handleDownloadAndStore = (imageSrc: string) => {
     const newImage: FinalImage = {
-      id: crypto.randomUUID(),
-      src: finalImageSrc,
-      createdAt: new Date(),
+        id: uuidv4(),
+        src: imageSrc,
+        createdAt: new Date(),
     };
-    setSavedImages(prev => [newImage, ...prev]);
+    setImageLibrary(prev => [newImage, ...prev]);
+
+    const link = document.createElement('a');
+    link.href = imageSrc;
+    link.download = `producto_ai_${newImage.id.substring(0,6)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return <div className="flex items-center justify-center min-h-[60vh]"><Spinner message={loadingMessage} /></div>;
+      return <Spinner message={loadingMessage} />;
     }
-    if (error) {
-      return (
-        <div className="text-center min-h-[60vh] flex flex-col items-center justify-center">
-            <p className="text-red-600 font-medium">{error}</p>
-            <button onClick={handleReset} className="mt-4 bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Empezar de Nuevo</button>
-        </div>
-      );
-    }
-
-    switch (stage) {
-      case 'PRODUCT':
+    
+    switch (appStage) {
+      case 'UPLOAD_PRODUCT':
         return (
-          <div className="max-w-md mx-auto flex flex-col gap-4 items-center">
-            <ImageInput id="product-image" label="1. Subir Producto" image={productImage} onImageChange={(file) => handleImageUpload(file, 'product')} icon="product" step="1"/>
-            {refinedProduct && (
-              <>
-                <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm p-2">
-                    <img src={refinedProduct} alt="Producto refinado" className="w-full rounded-md" />
-                </div>
-                <button onClick={() => handleOpenEditModal('product')} className="w-full text-center bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg transition border border-slate-300">Refinar Fondo</button>
-                <button onClick={handleProductNext} className="w-full bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all">Guardar y Continuar</button>
-              </>
-            )}
+          <div className="flex flex-col gap-6 items-center w-full max-w-md mx-auto">
+            <div className="text-center">
+                <h2 className="text-3xl font-bold tracking-tight">Paso 1: Sube tu Producto</h2>
+                <p className="text-slate-500 mt-2">La IA eliminará el fondo automáticamente.</p>
+            </div>
+            <ImageInput id="product-image" label="Seleccionar Producto" image={null} onImageChange={handleProductUpload} icon="product" step={1} />
           </div>
         );
-      case 'LOGO':
-          return (
-            <div className="max-w-md mx-auto flex flex-col gap-4 items-center">
-              <ImageInput id="logo-image" label="2. Subir Logotipo" image={logoImage} onImageChange={(file) => handleImageUpload(file, 'logo')} icon="logo" step="2"/>
-              {refinedLogo && (
-                <>
-                  <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm p-4">
-                    <img src={refinedLogo} alt="Logotipo refinado" className="w-full rounded-md" />
-                  </div>
-                  <button onClick={() => handleOpenEditModal('logo')} className="w-full text-center bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg transition border border-slate-300">Refinar Fondo</button>
-                  <button onClick={handleLogoNext} className="w-full bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all">Generar Diseños</button>
-                </>
-              )}
+
+      case 'REFINE_PRODUCT':
+        return (
+            <RefinementView 
+              title="Paso 2: Refina tu Producto"
+              description="Aprueba el recorte de la IA o usa el pincel para perfeccionarlo."
+              originalImage={productImage?.base64 || ''}
+              refinedImage={refinedProduct || ''}
+              onRefine={(mask) => handleRefineWithMask(productImage!.base64, mask, 'product')}
+              onConfirm={() => setAppStage('UPLOAD_LOGO')}
+            />
+        );
+      
+      case 'UPLOAD_LOGO':
+        return (
+          <div className="flex flex-col gap-6 items-center w-full max-w-md mx-auto">
+            <div className="text-center">
+                <h2 className="text-3xl font-bold tracking-tight">Paso 3: Sube tu Logo</h2>
+                <p className="text-slate-500 mt-2">El fondo también será eliminado.</p>
             </div>
-          );
-      case 'DESIGN':
-        return <DesignGrid designs={designProposals} onSelect={handleDesignSelect} />;
+            <ImageInput id="logo-image" label="Seleccionar Logo" image={null} onImageChange={handleLogoUpload} icon="logo" step={3}/>
+          </div>
+        );
+
+      case 'REFINE_LOGO':
+        return (
+            <RefinementView 
+              title="Paso 4: Refina tu Logo"
+              description="Asegúrate de que el recorte de tu logo sea perfecto."
+              originalImage={logoImage?.base64 || ''}
+              refinedImage={refinedLogo || ''}
+              onRefine={(mask) => handleRefineWithMask(logoImage!.base64, mask, 'logo')}
+              onConfirm={handleGenerateDesigns}
+            />
+        );
+
+      case 'SELECT_DESIGN':
+        return <DesignGrid designs={designs} onSelect={handleSelectDesign} />;
+      
       case 'FINALIZE':
-        return selectedDesign ? <FinalizationView selectedDesign={selectedDesign} onDownload={handleSaveToLibrary} /> : null;
+        return (
+          // Fix: Removed unsupported `onRefineImage` prop from `FinalizationView`.
+          // Image refinement is now handled in the `REFINE_PRODUCT` and `REFINE_LOGO` stages.
+          <FinalizationView 
+              selectedDesign={selectedDesign!} 
+              refinedLogo={refinedLogo}
+              onGenerateBatch={handleGenerateBatch}
+              batchImages={batchImages}
+              isBatchLoading={isBatchLoading}
+              onCreateVideoAd={handleCreateVideoAd}
+              videoUrl={videoUrl}
+              isVideoLoading={isVideoLoading}
+              loadingMessage={loadingMessage}
+              onDownload={handleDownloadAndStore}
+              onBack={() => {
+                  setSelectedDesign(null);
+                  setBatchImages([]);
+                  setVideoUrl(null);
+                  setAppStage('SELECT_DESIGN');
+              }}
+          />
+        );
+      
       default:
         return <div>Etapa desconocida</div>;
     }
   };
 
   return (
-    <div className="min-h-screen font-sans">
-      <header className="bg-white/80 p-4 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
-        <div className="container mx-auto flex items-center justify-between">
+    <div className="bg-slate-50 min-h-screen font-sans text-slate-800">
+      <header className="p-4 border-b border-slate-200 bg-white/80 backdrop-blur-lg sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
             <div className="flex items-center gap-3">
                 <Icon type="wand" className="w-8 h-8 text-sky-500"/>
-                <h1 className="text-2xl font-bold text-slate-900">Estudio de Producto AI</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Estudio de Producto IA</h1>
             </div>
-            <div className="flex items-center gap-4">
-                <button onClick={() => setIsLibraryOpen(true)} className="text-slate-500 hover:text-sky-500 transition p-2 hover:bg-slate-100 rounded-full" title="Biblioteca de Imágenes">
-                    <Icon type="gallery" className="w-6 h-6" />
-                </button>
-                 <button onClick={handleReset} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition">
-                    Empezar de Nuevo
-                </button>
-            </div>
+            <button onClick={() => setIsLibraryOpen(true)} className="flex items-center gap-2 bg-white hover:bg-slate-100 text-slate-600 font-semibold py-2 px-4 rounded-lg transition border border-slate-200 shadow-sm">
+                <Icon type="gallery" className="w-5 h-5"/>
+                <span>Biblioteca</span>
+            </button>
         </div>
       </header>
 
-      <main className="container mx-auto p-4 md:p-8">
-        {renderContent()}
+      <main className="p-4 md:p-8 flex items-center justify-center min-h-[calc(100vh-81px)]">
+          <div className="w-full">
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative max-w-4xl mx-auto mb-6" role="alert">
+                    <strong className="font-bold">¡Oh no! </strong>
+                    <span className="block sm:inline">{error}</span>
+                    <button className="absolute top-0 bottom-0 right-0 px-4 py-3" onClick={() => setError(null)}>
+                        <Icon type="close" className="w-6 h-6 text-red-500"/>
+                    </button>
+                </div>
+            )}
+            {renderContent()}
+          </div>
       </main>
-
-      {isEditModalOpen && editingImage && (
-        <EditModal 
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          productImage={editingImage.base64}
-          onRefine={handleRefine}
-        />
-      )}
       
-      <ImageLibraryModal
+      <ImageLibraryModal 
         isOpen={isLibraryOpen}
         onClose={() => setIsLibraryOpen(false)}
-        images={savedImages}
+        images={imageLibrary}
       />
     </div>
   );
-}
+};
 
 export default App;

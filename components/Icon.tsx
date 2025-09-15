@@ -1,35 +1,40 @@
-// Fix: Implementing the Icon component to be used across the application.
+// Fix: Implementing the Icon component to resolve module errors.
 import React from 'react';
 
 interface IconProps {
-  type: 'product' | 'logo' | 'check' | 'close' | 'wand' | 'save' | 'gallery' | 'square' | 'aspect-ratio-wide' | 'aspect-ratio-tall';
+  type: string;
   className?: string;
 }
 
-const icons: Record<IconProps['type'], React.ReactNode> = {
-  product: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9V3m-9 9h18" />,
-  logo: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 0 0 8 11a4 4 0 1 1 8 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0 0 12.002 11c-2.345 0-4.526.395-6.478 1.108c-.29.115-.486.417-.486.745v5.332c0 .328.197.63.487.745A18.498 18.498 0 0 0 12.002 22z" />,
-  check: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l4 4L19 7" />,
-  close: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12" />,
-  wand: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.75 3.104l5.625 5.625a2.25 2.25 0 0 1 0 3.182l-5.625 5.625a2.25 2.25 0 0 1-3.182 0l-5.625-5.625a2.25 2.25 0 0 1 0-3.182l5.625-5.625a2.25 2.25 0 0 1 3.182 0ZM15 7.5h.008v.008H15V7.5Zm-4.5 4.5h.008v.008H10.5v-4.5Zm-4.5 4.5h.008v.008H6v-4.5Z" />,
-  save: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 3.75H6.912a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661V18a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338A2.25 2.25 0 0 0 17.088 3.75H15M4.5 18.75h15" />,
-  gallery: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />,
-  square: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />,
-  'aspect-ratio-wide': <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0L15 15M3.75 20.25h4.5m-4.5 0v-4.5m0 4.5L9 15m11.25-6L15 9" />,
-  'aspect-ratio-tall': <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75h-4.5m4.5 0v4.5m-4.5-4.5L15 9m-1.5 11.25v-4.5m0 4.5h-4.5m4.5 0L9 15m6-11.25L9 9" />,
-};
-
 export const Icon: React.FC<IconProps> = ({ type, className = 'w-6 h-6' }) => {
+  const icons: { [key: string]: JSX.Element } = {
+    product: <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />,
+    logo: <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" />,
+    check: <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />,
+    close: <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />,
+    wand: <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c.621.204 1.25.204 1.87 0l.315-.105a2.25 2.25 0 012.338 1.196l.25 1.001a2.25 2.25 0 01-1.04 2.659l-2.122.707a2.25 2.25 0 00-1.04 2.659l.25 1.001a2.25 2.25 0 01-2.338 1.196l-.315-.105c-.621-.204-1.25-.204-1.87 0M19.5 5.25l-2.625 2.625M17.25 12l-2.25 2.25" />,
+    gallery: <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />,
+    save: <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />,
+    film: <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 004.5 9.75v7.5a2.25 2.25 0 002.25 2.25h7.5a2.25 2.25 0 002.25-2.25v-7.5a2.25 2.25 0 00-2.25-2.25h-.75m0-3l-3-3m0 0l-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 012.25 2.25v7.5a2.25 2.25 0 01-2.25 2.25h-7.5a2.25 2.25 0 01-2.25-2.25v-.75" />,
+    tiktok: <path fillRule="evenodd" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-2.43.03-4.83-.95-6.43-2.98-1.59-2.01-2.06-4.58-1.71-7.18.35-2.66 1.88-4.97 4.17-6.21 2.24-1.22 4.81-1.6 7.33-1.34.01-1.56-.01-3.11.01-4.67.01-1.23-.42-2.42-1.12-3.44C13.91 1.3 13.23.53 12.525.02z" clipRule="evenodd" />,
+    facebook: <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878V15.89h-2.54V12.61h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.925h-1.532c-1.233 0-1.62.772-1.62 1.562v1.875h3.25l-.52 3.28h-2.73v6.002C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />,
+    whatsapp: <path fillRule="evenodd" d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.84 3.12 1.32 4.79 1.32h.01c5.46 0 9.91-4.45 9.91-9.91s-4.45-9.91-9.91-9.91zM10.13 6.13c.24-.24.58-.25.82-.25.21 0 .42.01.62.01.27.01.44.15.62.43.2.28.62 1.4.7 1.5.08.1.13.21.21.32.08.1.16.21.16.21.08.1.18.23.27.36.09.13.18.28.18.28.09.13.13.21.13.21s.11.13.23.3c.12.18.21.38.21.38.1.21.11.43.03.68-.08.25-.33.48-.56.61-.23.13-.49.2-.75.21-.26.01-1.03-.13-1.95-.56-.92-.43-1.64-1.12-2.2-1.82-.57-.7-1.04-1.55-1.04-1.55s-.3-.59-.3-.59c-.2-.4-.41-.83-.41-1.27s.21-.86.41-1.06c.2-.2.43-.25.61-.25z" clipRule="evenodd" />,
+  };
+
+  const selectedIcon = icons[type] || null;
+
+  const isSocial = ['tiktok', 'facebook', 'whatsapp'].includes(type);
+
   return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      fill="none" 
-      viewBox="0 0 24 24" 
-      stroke="currentColor" 
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill={isSocial ? "currentColor" : "none"}
+      strokeWidth={isSocial ? 0 : 1.5}
+      stroke={isSocial ? "none" : "currentColor"}
       className={className}
-      aria-hidden="true"
     >
-      {icons[type]}
+      {selectedIcon}
     </svg>
   );
 };

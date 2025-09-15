@@ -1,96 +1,128 @@
-import React, { useState, useRef, useCallback } from 'react';
+// Fix: Implementing the FinalizationView component.
+import React, { useState, useEffect } from 'react';
 import { Icon } from './Icon';
-
-type AspectRatio = '1:1' | '9:16' | '16:9';
+import Spinner from './Spinner';
+import EditModal from './EditModal';
+import VideoEditor from './VideoEditor';
 
 interface FinalizationViewProps {
-  selectedDesign: string;
-  onDownload: (finalImageSrc: string) => void;
+    selectedDesign: string;
+    refinedLogo: string | null;
+    onGenerateBatch: (mainImage: string) => void;
+    batchImages: string[];
+    isBatchLoading: boolean;
+    onCreateVideoAd: (config: any) => void;
+    videoUrl: string | null;
+    isVideoLoading: boolean;
+    loadingMessage: string;
+    onDownload: (imageSrc: string) => void;
+    onBack: () => void;
+    // The onRefineImage prop is removed as refinement is now a separate, earlier step.
 }
 
-const aspectRatios: { id: AspectRatio, name: string, icon: 'square' | 'aspect-ratio-tall' | 'aspect-ratio-wide', value: number }[] = [
-    { id: '1:1', name: 'Cuadrado', icon: 'square', value: 1/1 },
-    { id: '9:16', name: 'Historia', icon: 'aspect-ratio-tall', value: 9/16 },
-    { id: '16:9', name: 'Ancho', icon: 'aspect-ratio-wide', value: 16/9 },
-];
+const FinalizationView: React.FC<FinalizationViewProps> = ({
+    selectedDesign,
+    refinedLogo,
+    onGenerateBatch,
+    batchImages,
+    isBatchLoading,
+    onCreateVideoAd,
+    videoUrl,
+    isVideoLoading,
+    loadingMessage,
+    onDownload,
+    onBack,
+}) => {
+    const [currentImage, setCurrentImage] = useState(selectedDesign);
+   
+    useEffect(() => {
+        setCurrentImage(selectedDesign);
+    }, [selectedDesign]);
 
-const FinalizationView: React.FC<FinalizationViewProps> = ({ selectedDesign, onDownload }) => {
-    const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
-    const previewRef = useRef<HTMLDivElement>(null);
-
-    const getAspectRatioClass = (ratio: AspectRatio) => {
-        if (ratio === '1:1') return 'aspect-square';
-        if (ratio === '9:16') return 'aspect-[9/16]';
-        if (ratio === '16:9') return 'aspect-[16/9]';
-        return '';
-    };
-
-    const handleDownload = useCallback(() => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = selectedDesign;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-            
-            const currentRatio = aspectRatios.find(r => r.id === aspectRatio)?.value ?? 1;
-            const outputWidth = 1080; // Standard width
-            const outputHeight = outputWidth / currentRatio;
-
-            canvas.width = outputWidth;
-            canvas.height = outputHeight;
-
-            // Center-crop logic
-            const imgRatio = img.naturalWidth / img.naturalHeight;
-            let srcX = 0, srcY = 0, srcWidth = img.naturalWidth, srcHeight = img.naturalHeight;
-
-            if (currentRatio > imgRatio) { // Output is wider than image -> crop top/bottom
-                srcHeight = img.naturalWidth / currentRatio;
-                srcY = (img.naturalHeight - srcHeight) / 2;
-            } else { // Output is taller than image -> crop left/right
-                srcWidth = img.naturalHeight * currentRatio;
-                srcX = (img.naturalWidth - srcWidth) / 2;
-            }
-
-            ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, outputWidth, outputHeight);
-            
-            const finalImageSrc = canvas.toDataURL('image/png');
-            onDownload(finalImageSrc);
-
+    const handleVideoDownload = () => {
+        if (videoUrl) {
             const link = document.createElement('a');
-            link.href = finalImageSrc;
-            link.download = `producto_final_${Date.now()}.png`;
+            link.href = videoUrl;
+            link.download = `anuncio_producto_ia.mp4`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        };
-    }, [selectedDesign, aspectRatio, onDownload]);
+        }
+    };
+
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 flex items-center justify-center bg-white p-4 rounded-lg shadow-sm">
-                <div ref={previewRef} className={`w-full max-w-2xl mx-auto rounded-lg overflow-hidden transition-all duration-300 ${getAspectRatioClass(aspectRatio)}`}>
-                    <img src={selectedDesign} alt="Diseño final" className="w-full h-full object-cover"/>
+        <div className="w-full max-w-7xl mx-auto p-4 md:p-8 flex flex-col gap-8 animate-fade-in">
+             <div className="flex justify-between items-center">
+                <div className="text-center md:text-left">
+                    <div className="inline-flex items-center gap-3 bg-white/50 px-4 py-2 rounded-full">
+                        <div className="bg-sky-500 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg flex-shrink-0">6</div>
+                        <h2 className="text-xl font-bold">Perfecciona y Exporta</h2>
+                    </div>
+                    <p className="text-slate-500 mt-2">Descarga tu diseño, genera más variaciones o crea un video comercial.</p>
+                </div>
+                <button onClick={onBack} className="bg-white hover:bg-slate-100 text-slate-600 font-semibold py-2 px-4 rounded-lg transition border border-slate-200 shadow-sm">
+                    Volver a Diseños
+                </button>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Main Image and Controls */}
+                <div className="flex flex-col gap-4">
+                    <div className="relative group rounded-lg overflow-hidden border-4 border-white shadow-lg aspect-square">
+                        <img src={currentImage} alt="Diseño final" className="w-full h-full object-cover" />
+                         {/* Refinement button is removed from this view */}
+                    </div>
+                     <button onClick={() => onDownload(currentImage)} className="w-full bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all flex items-center justify-center gap-2">
+                        <Icon type="save" className="w-5 h-5"/>
+                        <span>Descargar Imagen Principal</span>
+                    </button>
+                </div>
+
+                {/* Batch Generation & Video */}
+                <div className="flex flex-col gap-4">
+                     <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <div className="flex flex-col items-center text-center mb-4">
+                            <h3 className="text-xl font-bold mb-1">Lote de Venta</h3>
+                            <p className="text-slate-500">Genera 4 acercamientos de tu producto para usar en carruseles y videos.</p>
+                        </div>
+                        {isBatchLoading ? (
+                            <div className="flex items-center justify-center min-h-[200px]">
+                                <Spinner message="Generando acercamientos..."/>
+                            </div>
+                        ) : batchImages.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-3">
+                                {batchImages.map((img, index) => (
+                                    <div key={index} className="rounded-md overflow-hidden border border-slate-200 aspect-square">
+                                         <img src={img} alt={`Imagen de lote ${index + 1}`} className="w-full h-full object-cover" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center min-h-[200px] bg-slate-50 rounded-lg border-2 border-dashed border-slate-200 p-4">
+                                <p className="text-slate-500 mb-4">Aún no has generado un lote.</p>
+                                <button onClick={() => onGenerateBatch(currentImage)} className="bg-emerald-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-emerald-500 transition-all">
+                                    Generar Lote Ahora
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <VideoEditor 
+                        mainImage={currentImage}
+                        batchImages={batchImages}
+                        logoImage={refinedLogo}
+                        videoUrl={videoUrl}
+                        isVideoLoading={isVideoLoading}
+                        loadingMessage={loadingMessage}
+                        onCreateVideoAd={onCreateVideoAd}
+                        onVideoDownload={handleVideoDownload}
+                    />
+
                 </div>
             </div>
-            <aside className="lg:col-span-1 bg-white p-6 rounded-lg shadow-sm flex flex-col gap-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-3">4. Formato Final</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                        {aspectRatios.map(({ id, name, icon }) => (
-                            <button key={id} onClick={() => setAspectRatio(id)} className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition ${aspectRatio === id ? 'bg-sky-500/10 border-sky-500 text-sky-600' : 'border-slate-300 hover:bg-slate-100'}`}>
-                                <Icon type={icon} className="w-6 h-6"/>
-                                <span className="text-xs font-medium">{name}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <button onClick={handleDownload} className="w-full mt-auto bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all flex items-center justify-center gap-2">
-                    <Icon type="save" className="w-5 h-5"/>
-                    <span>Descargar y Guardar</span>
-                </button>
-            </aside>
+
+            {/* EditModal is no longer needed here */}
         </div>
     );
 };

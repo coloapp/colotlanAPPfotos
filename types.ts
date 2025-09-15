@@ -10,4 +10,10 @@ export interface FinalImage {
   createdAt: Date;
 }
 
-export type AppStage = 'PRODUCT' | 'LOGO' | 'DESIGN' | 'FINALIZE';
+export type AppStage = 
+  | 'UPLOAD_PRODUCT' 
+  | 'REFINE_PRODUCT' 
+  | 'UPLOAD_LOGO' 
+  | 'REFINE_LOGO'
+  | 'SELECT_DESIGN' 
+  | 'FINALIZE';
