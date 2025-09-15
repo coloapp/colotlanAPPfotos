@@ -133,17 +133,17 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, productImage, on
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in-scale">
-      <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl z-10 relative border border-gray-700 flex flex-col overflow-hidden max-h-[90vh]">
-        <header className="p-4 flex justify-between items-center border-b border-gray-700 flex-shrink-0">
-            <h2 className="text-xl font-bold text-white">Refinar Fondo</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-gray-700">
+    <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 animate-fade-in-scale">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl z-10 relative border border-slate-200 flex flex-col overflow-hidden max-h-[90vh]">
+        <header className="p-4 flex justify-between items-center border-b border-slate-200 flex-shrink-0">
+            <h2 className="text-xl font-bold text-slate-900">Refinar Fondo</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-800 transition-colors p-2 rounded-full hover:bg-slate-100">
                 <Icon type="close" className="w-6 h-6" />
             </button>
         </header>
 
-        <main className="p-4 flex-grow overflow-auto flex flex-col lg:flex-row gap-4">
-             <div className="lg:w-2/3 flex items-center justify-center bg-gray-800 rounded-lg overflow-hidden">
+        <main className="p-4 flex-grow overflow-auto flex flex-col lg:flex-row gap-4 bg-slate-50/50">
+             <div className="lg:w-2/3 flex items-center justify-center bg-slate-200 rounded-lg overflow-hidden">
                 <canvas 
                     ref={canvasRef} 
                     className="cursor-crosshair max-w-full max-h-full object-contain"
@@ -152,19 +152,19 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, productImage, on
                     onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
                 />
              </div>
-             <aside className="lg:w-1/3 bg-gray-800/50 p-4 rounded-lg flex flex-col gap-4">
+             <aside className="lg:w-1/3 bg-white p-4 rounded-lg flex flex-col gap-4 border border-slate-200">
                 <h3 className="text-lg font-semibold">Herramienta de Pincel</h3>
-                <p className="text-sm text-gray-400">Pinta sobre las áreas que quieres eliminar. La IA borrará todo lo que marques.</p>
+                <p className="text-sm text-slate-500">Pinta sobre las áreas que quieres eliminar. La IA borrará todo lo que marques.</p>
                 <div>
-                    <label htmlFor="brushSize" className="block mb-2 text-sm font-medium text-gray-300">Tamaño del Pincel: {brushSize}px</label>
-                    <input id="brushSize" type="range" min="5" max="100" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-amber-500" />
+                    <label htmlFor="brushSize" className="block mb-2 text-sm font-medium text-slate-600">Tamaño del Pincel: {brushSize}px</label>
+                    <input id="brushSize" type="range" min="5" max="100" value={brushSize} onChange={(e) => setBrushSize(Number(e.target.value))} className="w-full h-2 bg-slate-300 rounded-lg appearance-none cursor-pointer accent-sky-500" />
                 </div>
-                <button onClick={drawImageOnCanvas} className="w-full text-center bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition">Limpiar Dibujo</button>
+                <button onClick={drawImageOnCanvas} className="w-full text-center bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition">Limpiar Dibujo</button>
              </aside>
         </main>
 
-        <footer className="p-4 bg-gray-800/50 border-t border-gray-700 flex justify-end flex-shrink-0">
-            <button onClick={handleApplyRefinement} className="flex items-center gap-2 bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-500 transition-all">
+        <footer className="p-4 bg-white border-t border-slate-200 flex justify-end flex-shrink-0">
+            <button onClick={handleApplyRefinement} className="flex items-center gap-2 bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all">
                 <Icon type="wand" className="w-5 h-5"/>
                 <span>Aplicar Refinamiento</span>
             </button>

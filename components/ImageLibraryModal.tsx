@@ -21,26 +21,26 @@ const ImageLibraryModal: React.FC<ImageLibraryModalProps> = ({ isOpen, onClose, 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in-scale">
-            <div className="bg-gray-900 rounded-2xl w-full max-w-4xl relative border border-gray-700 flex flex-col max-h-[90vh]">
-                 <header className="p-4 flex justify-between items-center border-b border-gray-700 flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                        <Icon type="gallery" className="w-6 h-6 text-amber-400"/>
-                        <h2 className="text-xl font-bold text-white">Biblioteca de Imágenes</h2>
+        <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 animate-fade-in-scale">
+            <div className="bg-white rounded-2xl w-full max-w-4xl relative border border-slate-200 flex flex-col max-h-[90vh] shadow-2xl">
+                 <header className="p-4 flex justify-between items-center border-b border-slate-200 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <Icon type="gallery" className="w-6 h-6 text-sky-500"/>
+                        <h2 className="text-xl font-bold text-slate-900">Biblioteca de Imágenes</h2>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-gray-700">
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-800 transition-colors p-2 rounded-full hover:bg-slate-100">
                         <Icon type="close" className="w-6 h-6" />
                     </button>
                 </header>
-                <main className="p-6 overflow-y-auto">
+                <main className="p-6 overflow-y-auto bg-slate-50/50">
                     {images.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {images.map((image) => (
-                                <div key={image.id} className="relative group rounded-lg overflow-hidden border border-gray-700">
+                                <div key={image.id} className="relative group rounded-lg overflow-hidden border border-slate-200 bg-white shadow-sm">
                                     <img src={image.src} alt={`Imagen generada el ${image.createdAt.toLocaleString()}`} className="w-full h-full object-cover aspect-square"/>
-                                    <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-2 text-center">
-                                        <p className="text-xs text-gray-300 mb-2">{image.createdAt.toLocaleDateString()}</p>
-                                        <button onClick={() => handleDownload(image.src, image.id)} className="bg-amber-600 text-white font-semibold py-2 px-3 text-sm rounded-md hover:bg-amber-500">
+                                    <div className="absolute inset-0 bg-slate-900/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity p-2 text-center">
+                                        <p className="text-xs text-slate-300 mb-2">{image.createdAt.toLocaleDateString()}</p>
+                                        <button onClick={() => handleDownload(image.src, image.id)} className="bg-sky-600 text-white font-semibold py-2 px-3 text-sm rounded-md hover:bg-sky-500">
                                             Descargar
                                         </button>
                                     </div>
@@ -49,8 +49,8 @@ const ImageLibraryModal: React.FC<ImageLibraryModalProps> = ({ isOpen, onClose, 
                         </div>
                     ) : (
                         <div className="text-center py-16">
-                            <p className="text-gray-400">Tu biblioteca está vacía.</p>
-                            <p className="text-gray-500 text-sm">Las imágenes que descargues aparecerán aquí.</p>
+                            <p className="text-slate-500">Tu biblioteca está vacía.</p>
+                            <p className="text-slate-400 text-sm">Las imágenes que descargues aparecerán aquí.</p>
                         </div>
                     )}
                 </main>

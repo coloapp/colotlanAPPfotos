@@ -69,24 +69,24 @@ const FinalizationView: React.FC<FinalizationViewProps> = ({ selectedDesign, onD
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 flex items-center justify-center">
+            <div className="lg:col-span-2 flex items-center justify-center bg-white p-4 rounded-lg shadow-sm">
                 <div ref={previewRef} className={`w-full max-w-2xl mx-auto rounded-lg overflow-hidden transition-all duration-300 ${getAspectRatioClass(aspectRatio)}`}>
                     <img src={selectedDesign} alt="Diseño final" className="w-full h-full object-cover"/>
                 </div>
             </div>
-            <aside className="lg:col-span-1 bg-gray-800/50 p-6 rounded-lg flex flex-col gap-6">
+            <aside className="lg:col-span-1 bg-white p-6 rounded-lg shadow-sm flex flex-col gap-6">
                 <div>
                     <h3 className="text-lg font-semibold mb-3">4. Formato Final</h3>
                     <div className="grid grid-cols-3 gap-2">
                         {aspectRatios.map(({ id, name, icon }) => (
-                            <button key={id} onClick={() => setAspectRatio(id)} className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition ${aspectRatio === id ? 'bg-amber-500/20 border-amber-500 text-amber-400' : 'border-gray-700 hover:bg-gray-700'}`}>
+                            <button key={id} onClick={() => setAspectRatio(id)} className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition ${aspectRatio === id ? 'bg-sky-500/10 border-sky-500 text-sky-600' : 'border-slate-300 hover:bg-slate-100'}`}>
                                 <Icon type={icon} className="w-6 h-6"/>
                                 <span className="text-xs font-medium">{name}</span>
                             </button>
                         ))}
                     </div>
                 </div>
-                <button onClick={handleDownload} className="w-full mt-auto bg-amber-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-500 transition-all flex items-center justify-center gap-2">
+                <button onClick={handleDownload} className="w-full mt-auto bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all flex items-center justify-center gap-2">
                     <Icon type="save" className="w-5 h-5"/>
                     <span>Descargar y Guardar</span>
                 </button>

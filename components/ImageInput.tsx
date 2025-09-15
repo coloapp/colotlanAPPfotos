@@ -20,24 +20,24 @@ const ImageInput: React.FC<ImageInputProps> = ({ id, label, image, onImageChange
   };
 
   return (
-    <div className={`bg-gray-800/50 border-2 border-dashed border-gray-600 rounded-2xl p-6 flex flex-col items-center justify-center transition-all duration-300 w-full aspect-square relative hover:border-amber-400 hover:bg-gray-800`}>
-      <div className="absolute top-4 left-4 bg-amber-500 text-gray-900 rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg z-10">{step}</div>
+    <div className={`bg-white border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center transition-all duration-300 w-full aspect-square relative hover:border-sky-400 hover:bg-slate-50 shadow-sm`}>
+      <div className="absolute top-4 left-4 bg-sky-500 text-white rounded-full h-8 w-8 flex items-center justify-center font-bold text-lg z-10">{step}</div>
       <label htmlFor={id} className={`cursor-pointer w-full h-full flex flex-col items-center justify-center text-center relative`}>
         {image ? (
           <>
             <img src={image.base64} alt={label} className="w-full h-full object-contain rounded-lg" />
-            <div className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-lg">
-                <div className="flex items-center gap-2 text-green-400">
+            <div className="absolute inset-0 bg-slate-900/70 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-lg">
+                <div className="flex items-center gap-2 text-emerald-400">
                     <Icon type="check" className="w-8 h-8"/>
                     <span className="font-semibold text-lg">Cargado</span>
                 </div>
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-4 text-gray-400">
+          <div className="flex flex-col items-center justify-center gap-4 text-slate-500">
             <Icon type={icon} className="w-16 h-16"/>
             <span className="font-semibold text-lg">{label}</span>
-            <span className="text-sm text-gray-500">Haz clic o arrastra para seleccionar</span>
+            <span className="text-sm text-slate-400">Haz clic o arrastra para seleccionar</span>
           </div>
         )}
       </label>

@@ -133,8 +133,8 @@ const App: React.FC = () => {
     if (error) {
       return (
         <div className="text-center min-h-[60vh] flex flex-col items-center justify-center">
-            <p className="text-red-400">{error}</p>
-            <button onClick={handleReset} className="mt-4 bg-amber-600 text-white font-bold py-2 px-4 rounded-lg">Empezar de Nuevo</button>
+            <p className="text-red-600 font-medium">{error}</p>
+            <button onClick={handleReset} className="mt-4 bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Empezar de Nuevo</button>
         </div>
       );
     }
@@ -146,9 +146,11 @@ const App: React.FC = () => {
             <ImageInput id="product-image" label="1. Subir Producto" image={productImage} onImageChange={(file) => handleImageUpload(file, 'product')} icon="product" step="1"/>
             {refinedProduct && (
               <>
-                <img src={refinedProduct} alt="Producto refinado" className="w-full rounded-lg border-2 border-gray-700" />
-                <button onClick={() => handleOpenEditModal('product')} className="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition">Refinar Fondo</button>
-                <button onClick={handleProductNext} className="w-full bg-amber-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-500 transition-all">Guardar y Continuar</button>
+                <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm p-2">
+                    <img src={refinedProduct} alt="Producto refinado" className="w-full rounded-md" />
+                </div>
+                <button onClick={() => handleOpenEditModal('product')} className="w-full text-center bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg transition border border-slate-300">Refinar Fondo</button>
+                <button onClick={handleProductNext} className="w-full bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all">Guardar y Continuar</button>
               </>
             )}
           </div>
@@ -159,9 +161,11 @@ const App: React.FC = () => {
               <ImageInput id="logo-image" label="2. Subir Logotipo" image={logoImage} onImageChange={(file) => handleImageUpload(file, 'logo')} icon="logo" step="2"/>
               {refinedLogo && (
                 <>
-                  <img src={refinedLogo} alt="Logotipo refinado" className="w-full rounded-lg border-2 border-gray-700 p-4" />
-                  <button onClick={() => handleOpenEditModal('logo')} className="w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition">Refinar Fondo</button>
-                  <button onClick={handleLogoNext} className="w-full bg-amber-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-500 transition-all">Generar Diseños</button>
+                  <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm p-4">
+                    <img src={refinedLogo} alt="Logotipo refinado" className="w-full rounded-md" />
+                  </div>
+                  <button onClick={() => handleOpenEditModal('logo')} className="w-full text-center bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg transition border border-slate-300">Refinar Fondo</button>
+                  <button onClick={handleLogoNext} className="w-full bg-sky-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-sky-500 transition-all">Generar Diseños</button>
                 </>
               )}
             </div>
@@ -176,18 +180,18 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen font-sans">
-      <header className="bg-gray-800/50 p-4 border-b border-gray-700 sticky top-0 z-20 backdrop-blur-sm">
+    <div className="min-h-screen font-sans">
+      <header className="bg-white/80 p-4 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <Icon type="wand" className="w-8 h-8 text-amber-400"/>
-                <h1 className="text-2xl font-bold">Estudio de Producto AI</h1>
+            <div className="flex items-center gap-3">
+                <Icon type="wand" className="w-8 h-8 text-sky-500"/>
+                <h1 className="text-2xl font-bold text-slate-900">Estudio de Producto AI</h1>
             </div>
             <div className="flex items-center gap-4">
-                <button onClick={() => setIsLibraryOpen(true)} className="text-gray-300 hover:text-white transition p-2 hover:bg-gray-700 rounded-full" title="Biblioteca de Imágenes">
+                <button onClick={() => setIsLibraryOpen(true)} className="text-slate-500 hover:text-sky-500 transition p-2 hover:bg-slate-100 rounded-full" title="Biblioteca de Imágenes">
                     <Icon type="gallery" className="w-6 h-6" />
                 </button>
-                 <button onClick={handleReset} className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition">
+                 <button onClick={handleReset} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition">
                     Empezar de Nuevo
                 </button>
             </div>
